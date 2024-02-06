@@ -51,6 +51,7 @@ export function ProductForm({
     name: "variants",
   });
   const [isModal, setIsModal] = useState(false);
+  const [tags, setTags] = useState([]);
   const [pictures, setPictures] = useState([]);
   const { data: categories } = useFetchCategories();
   const [token] = useLocalStorage("token");
@@ -79,21 +80,23 @@ export function ProductForm({
       description: data?.description,
       type: data?.product_type.value,
       moq: data?.moq,
+      pictures: pictures,
+      tags: tags,
       quantity:
-        data.variants.length > 0
-          ? data.variants
-              .map((field) => parseInt(field.quantity, 10))
+        data?.variants?.length > 0
+          ? data?.variants
+              ?.map((field) => parseInt(field.quantity, 10))
               .reduce((accu, curr) => accu + curr, 0)
           : data?.quantity,
-      price: parseInt(data?.price, 10),
-      discounted_price: parseInt(data?.discounted_price, 10),
+      price: data?.price,
+      discounted_price: data?.discounted_price,
       category_id: data?.category?.value,
-      sku_id: data.variants.length > 0 ? "" : data?.sku_id,
+      sku_id: data?.variants?.length > 0 ? "" : data?.sku_id,
       gst: data?.gst,
       hsn_code: data?.hsn_code,
       meta_title: data?.meta_title,
       meta_description: data?.meta_description,
-      weight: data?.weight,
+      weight: `${data?.weight}${data?.weight_measure}`,
       variants: data?.variants,
     };
 
@@ -104,13 +107,13 @@ export function ProductForm({
     } else if (type === "delete") {
       handleDelete(productId);
     }
+
     remove();
     reset();
   };
 
   const watchProductType = watch("product_type");
   const watchInputs = watch();
-  console.log({ watchInputs });
 
   useEffect(() => {
     // Fetch data from API and populate the form with prefilled values
@@ -150,10 +153,11 @@ export function ProductForm({
 
   const handleFileChange = async (event, inputName) => {
     try {
-      const selectedFile = event.target.files[0];
-      console.log(selectedFile);
+      const selectedFiles = Array.from(event.target.files);
       const formData = new FormData();
-      formData.append("file", selectedFile);
+      selectedFiles.forEach((file) => {
+        formData.append("file", file);
+      });
       console.log("formData=>", formData);
       const response = await axios.post(
         `${process.env.NEXT_PUBLIC_API_URL}${endpoints.files.upload}`,
@@ -165,6 +169,8 @@ export function ProductForm({
           },
         }
       );
+
+      console.log({ response });
 
       if (!inputName) {
         setPictures([...pictures, ...response.data.path]);
@@ -185,6 +191,11 @@ export function ProductForm({
         `${endpoints.files.getFiles}?file_path=${filePath}`
       );
       toast.success(resp.message);
+
+      if (!inputPath) {
+        return setPictures((prev) => prev.filter((so) => so !== filePath));
+      }
+
       setValue(inputPath, "");
     } catch (error) {
       console.log(error);
@@ -194,6 +205,18 @@ export function ProductForm({
         toast.error("error deleting image");
       }
     }
+  };
+
+  const addTag = () => {
+    if (getValues("tag") === "") {
+      return toast.warning("please enter tag name");
+    }
+
+    const updatedTags = new Set([...tags, getValues("tag")]);
+
+    updatedTags.add(getValues("tag").trim());
+    setTags([...Array.from(updatedTags)]);
+    setValue("tag", "");
   };
 
   return (
@@ -331,6 +354,7 @@ export function ProductForm({
                   placeholder="Price"
                   {...register("price", {
                     required: "Price is required",
+                    valueAsNumber: true,
                   })}
                 />
                 {errors.price && (
@@ -347,6 +371,7 @@ export function ProductForm({
                   placeholder="Discounted price"
                   {...register("discounted_price", {
                     required: "Discounted price is required",
+                    valueAsNumber: true,
                   })}
                 />
                 {errors.discounted_price && (
@@ -356,70 +381,39 @@ export function ProductForm({
                 )}
               </div>
 
-              {/* weight */}
-              <div>
-                <Label htmlFor="weight">Weight</Label>
-                <Input
-                  type="text"
-                  disabled={type === "view" || type === "delete"}
-                  placeholder="Weight"
-                  {...register("weight", {
-                    required: "Weight is required",
-                  })}
-                />
-                {errors.weight && (
-                  <span className="text-red-600">{errors.weight.message}</span>
-                )}
-              </div>
+              {/* tags */}
+              <div className="col-span-3">
+                <Label htmlFor="quantity">Tags</Label>
+                <div className="grid grid-cols-12 gap-2 border p-0.5 rounded">
+                  <div className="flex flex-wrap items-center col-span-10 gap-2">
+                    {tags?.map((tag, key) => (
+                      <span
+                        key={key}
+                        className="bg-primary rounded-lg p-1 px-2 text-white cursor-pointer"
+                        onClick={() => {
+                          const updatedTags = tags?.filter(
+                            (item) => item !== tag
+                          );
+                          setTags(updatedTags);
+                        }}
+                      >
+                        {tag} x
+                      </span>
+                    ))}
 
-              {/* gst */}
-              <div>
-                <Label htmlFor="gst">GST</Label>
-                <Input
-                  type="number"
-                  disabled={type === "view" || type === "delete"}
-                  placeholder="GST"
-                  {...register("gst", {
-                    required: "GST is required",
-                  })}
-                />
-                {errors.gst && (
-                  <span className="text-red-600">{errors.gst.message}</span>
-                )}
-              </div>
-
-              {/* sku */}
-              <div>
-                <Label htmlFor="sku">SKU ID</Label>
-                <Input
-                  type="text"
-                  disabled={type === "view" || type === "delete"}
-                  placeholder="SKU"
-                  {...register("sku_id", {
-                    required: "SKU is required",
-                  })}
-                />
-                {errors.sku && (
-                  <span className="text-red-600">{errors.sku.message}</span>
-                )}
-              </div>
-
-              {/* quantity */}
-              <div>
-                <Label htmlFor="quantity">Quantity</Label>
-                <Input
-                  type="number"
-                  disabled={type === "view" || type === "delete"}
-                  placeholder="Quantity"
-                  {...register("quantity", {
-                    required: "Quantity is required",
-                  })}
-                />
-                {errors.quantity && (
-                  <span className="text-red-600">
-                    {errors.quantity.message}
-                  </span>
-                )}
+                    <input
+                      {...register("tag")}
+                      type="tag"
+                      disabled={type === "view" || type === "delete"}
+                      placeholder="Enter tag name"
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <Button type="button" className="w-full" onClick={addTag}>
+                      Add tag
+                    </Button>
+                  </div>
+                </div>
               </div>
 
               {/* description */}
@@ -452,17 +446,38 @@ export function ProductForm({
                 out.
               </p>
             </div>
-            <div className="grid grid-cols-3 gap-2">
-              {getValues("picture") && (
+            <div className="grid grid-cols-3 gap-2 gap-y-4">
+              {pictures?.length > 0 ? (
+                pictures?.map((picture) => (
+                  <div key={picture} className="relative w-48 h-32">
+                    <button
+                      type="button"
+                      className="absolute -top-2 -right-2 rounded-md p-1 bg-red-500 text-white z-10"
+                      onClick={() => deleteFile(picture)}
+                    >
+                      <AiOutlineDelete />
+                    </button>
+                    <Image
+                      src={`${process.env.NEXT_PUBLIC_IMAGE_DOMAIN}/${picture}`}
+                      fill
+                      objectFit="cover"
+                      objectPosition="center"
+                      alt="image"
+                      className="rounded-xl"
+                    />
+                  </div>
+                ))
+              ) : (
                 <div>
                   <Label htmlFor="picture">Picture</Label>
                   <Input
-                    type="file"
-                    id="picture"
-                    multiple
                     {...register("picture", {
                       required: "Please selecct pictures",
                     })}
+                    type="file"
+                    id="picture"
+                    multiple
+                    onChange={(e) => handleFileChange(e, null)}
                   />
                   {errors.picture && (
                     <span className="text-red-600">
@@ -564,17 +579,45 @@ export function ProductForm({
             <div className="grid grid-cols-3 gap-2">
               {/* weight */}
               <div>
-                <Label htmlFor="weight">Shipment Weight</Label>
-                <Input
-                  type="text"
-                  id="weight"
-                  placeholder="Enter shipment weight"
-                  {...register("weight", {
-                    required: "Product weight is required",
-                  })}
-                />
+                <Label htmlFor="weight">Weight</Label>
+                <div>
+                  <div className="grid grid-cols-6 gap-2">
+                    <Input
+                      {...register("weight", {
+                        required: "Weight is required",
+                      })}
+                      type="number"
+                      disabled={type === "view" || type === "delete"}
+                      placeholder="Weight"
+                      className="col-span-4"
+                    />
+                    <select
+                      {...register("weight_measure")}
+                      className="col-span-2 border rounded"
+                    >
+                      <option value="kg">KG</option>
+                      <option value="gm">GM</option>
+                    </select>
+                  </div>
+                </div>
                 {errors.weight && (
                   <span className="text-red-600">{errors.weight.message}</span>
+                )}
+              </div>
+
+              {/* gst */}
+              <div>
+                <Label htmlFor="gst">GST</Label>
+                <Input
+                  {...register("gst", {
+                    required: "GST is required",
+                  })}
+                  type="text"
+                  disabled={type === "view" || type === "delete"}
+                  placeholder="GST"
+                />
+                {errors.gst && (
+                  <span className="text-red-600">{errors.gst.message}</span>
                 )}
               </div>
 
@@ -593,22 +636,6 @@ export function ProductForm({
                   <span className="text-red-600">
                     {errors.hsn_code.message}
                   </span>
-                )}
-              </div>
-
-              {/* gst */}
-              <div>
-                <Label htmlFor="gst">GST</Label>
-                <Input
-                  type="number"
-                  id="gst"
-                  placeholder="Enter GST"
-                  {...register("gst", {
-                    required: "Please enter GST",
-                  })}
-                />
-                {errors.gst && (
-                  <span className="text-red-600">{errors.gst.message}</span>
                 )}
               </div>
             </div>
