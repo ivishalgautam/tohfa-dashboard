@@ -45,10 +45,27 @@ export function ProductForm({
     reset,
     getValues,
     formState: { errors },
-  } = useForm();
+  } = useForm({
+    defaultValues: {
+      discount: [
+        {
+          discount_quantity: 0,
+          discount_percentage: 0,
+        },
+      ],
+    },
+  });
   const { fields, append, remove } = useFieldArray({
     control,
     name: "variants",
+  });
+  const {
+    fields: discountFields,
+    append: discountAppend,
+    remove: discountRemove,
+  } = useFieldArray({
+    control,
+    name: "discount",
   });
   const [isModal, setIsModal] = useState(false);
   const [tags, setTags] = useState([]);
@@ -82,6 +99,7 @@ export function ProductForm({
       moq: data?.moq,
       pictures: pictures,
       tags: tags,
+      discounts: data?.discount,
       quantity:
         data?.variants?.length > 0
           ? data?.variants
@@ -96,7 +114,8 @@ export function ProductForm({
       hsn_code: data?.hsn_code,
       meta_title: data?.meta_title,
       meta_description: data?.meta_description,
-      weight: `${data?.weight}${data?.weight_measure}`,
+      weight: data?.weight,
+      weight_measurement: data?.weight_measurement,
       variants: data?.variants,
     };
 
@@ -114,6 +133,7 @@ export function ProductForm({
 
   const watchProductType = watch("product_type");
   const watchInputs = watch();
+  // console.log({ watchInputs });
 
   useEffect(() => {
     // Fetch data from API and populate the form with prefilled values
@@ -123,12 +143,17 @@ export function ProductForm({
           `${endpoints.products.getAll}/getById/${productId}`
         );
 
+        console.log({ data });
+
         data && setValue("name", data?.title);
         data &&
           setValue(
             "category",
             formattedCategories?.find((so) => so.value === data?.category_id)
           );
+        console.log(
+          formattedCategories?.find((so) => so.value === data?.category_id)
+        );
         data &&
           setValue(
             "product_type",
@@ -138,6 +163,19 @@ export function ProductForm({
         data && setValue("price", data?.price);
         data && setValue("discounted_price", data?.discounted_price);
         data && setValue("description", data?.description);
+        data && setValue("discount", data?.discounts);
+        data && setPictures(data?.pictures);
+        data && setValue("quantity", data?.quantity);
+        data && setValue("sku_id", data?.sku_id);
+        data && setValue("weight", data?.weight);
+        data && setValue("weight_measurement", data?.weight_measurement);
+        data && setValue("sku_id", data?.sku_id);
+        data && setValue("gst", data?.gst);
+        data && setValue("hsn_code", data?.hsn_code);
+        data && setValue("variants", data?.variants);
+        data && setValue("meta_title", data?.meta_title);
+        data && setValue("meta_description", data?.meta_description);
+        data && setPictures(data?.pictures);
       } catch (error) {
         console.error(error);
       }
@@ -149,7 +187,7 @@ export function ProductForm({
     ) {
       fetchData();
     }
-  }, [productId, type]);
+  }, [productId, type, formattedCategories?.length]);
 
   const handleFileChange = async (event, inputName) => {
     try {
@@ -327,22 +365,73 @@ export function ProductForm({
                 )}
               </div>
 
-              {/* moq */}
               {watchProductType?.value === "corporate" && (
-                <div>
-                  <Label htmlFor="moq">Minimum order quantity</Label>
-                  <Input
-                    type="number"
-                    disabled={type === "view" || type === "delete"}
-                    placeholder="Minimum order quantity"
-                    {...register("moq", {
-                      required: "Minimum order quantity is required!",
-                    })}
-                  />
-                  {errors.moq && (
-                    <span className="text-red-600">{errors.moq.message}</span>
-                  )}
-                </div>
+                <>
+                  {/* moq */}
+                  <div>
+                    <Label htmlFor="moq">Minimum order quantity</Label>
+                    <Input
+                      type="number"
+                      disabled={type === "view" || type === "delete"}
+                      placeholder="Minimum order quantity"
+                      {...register("moq", {
+                        required: "Minimum order quantity is required!",
+                      })}
+                    />
+                    {errors.moq && (
+                      <span className="text-red-600">{errors.moq.message}</span>
+                    )}
+                  </div>
+
+                  {/* discount fields */}
+                  <div className="col-span-3 space-y-2 mt-4">
+                    <Title text={"Discounts"} />
+                    {discountFields?.map((field, key) => (
+                      <div
+                        key={field.id}
+                        className="flex items-end justify-start gap-2"
+                      >
+                        <div>
+                          <Label>Discount Quantity</Label>
+                          <Input
+                            {...register(`discount.${key}.discount_quantity`, {
+                              required: "This field is required",
+                              valueAsNumber: true,
+                            })}
+                            type="number"
+                          />
+                        </div>
+                        <div>
+                          <Label>Discount in percentage</Label>
+                          <Input
+                            {...register(
+                              `discount.${key}.discount_percentage`,
+                              {
+                                required: "This field is required",
+                                valueAsNumber: true,
+                              }
+                            )}
+                            type="number"
+                          />
+                        </div>
+                        <div>
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            onClick={() => discountRemove(key)}
+                          >
+                            <AiOutlineDelete size={20} />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                    <div className="text-end">
+                      <Button type="button" onClick={() => discountAppend()}>
+                        Add Discounts
+                      </Button>
+                    </div>
+                  </div>
+                </>
               )}
 
               {/* product price */}
@@ -472,7 +561,7 @@ export function ProductForm({
                   <Label htmlFor="picture">Picture</Label>
                   <Input
                     {...register("picture", {
-                      required: "Please selecct pictures",
+                      required: "Please select pictures",
                     })}
                     type="file"
                     id="picture"
@@ -511,7 +600,7 @@ export function ProductForm({
                         disabled={fields?.length > 0}
                         placeholder="Quantity"
                         {...register("quantity", {
-                          required: "Quantity is required",
+                          valueAsNumber: true,
                         })}
                       />
                       {errors.quantity && (
@@ -544,9 +633,7 @@ export function ProductForm({
                         type="text"
                         disabled={fields?.length > 0}
                         placeholder="SKU ID"
-                        {...register("sku_id", {
-                          required: "SKU ID is required",
-                        })}
+                        {...register("sku_id")}
                       />
                       {errors.sku_id && (
                         <span className="text-red-600">
@@ -585,6 +672,7 @@ export function ProductForm({
                     <Input
                       {...register("weight", {
                         required: "Weight is required",
+                        valueAsNumber: true,
                       })}
                       type="number"
                       disabled={type === "view" || type === "delete"}
@@ -592,7 +680,7 @@ export function ProductForm({
                       className="col-span-4"
                     />
                     <select
-                      {...register("weight_measure")}
+                      {...register("weight_measurement")}
                       className="col-span-2 border rounded"
                     >
                       <option value="kg">KG</option>
@@ -749,8 +837,10 @@ export function ProductForm({
                         </td>
                         <td>
                           <Input
-                            {...register(`variants.${index}.weight`)}
-                            type="text"
+                            {...register(`variants.${index}.weight`, {
+                              valueAsNumber: true,
+                            })}
+                            type="number"
                             placeholder="Weight"
                           />
                         </td>

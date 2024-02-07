@@ -1,6 +1,9 @@
 "use client";
 import { Button } from "../../components/ui/button";
 import { ArrowUpDown } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { Switch } from "@/components/ui/switch";
 import {
   CaretSortIcon,
   ChevronDownIcon,
@@ -18,7 +21,25 @@ import {
 
 import moment from "moment";
 
-export const columns = (setType, openModal, setProductId) => [
+export const columns = (setType, openModal, setProductId, publishProduct) => [
+  {
+    accessorKey: "pictures",
+    header: ({ column }) => {
+      return <Button variant="ghost">Image</Button>;
+    },
+    cell: ({ row }) => {
+      const image = row.original.pictures?.[0];
+      return (
+        <Image
+          src={`${process.env.NEXT_PUBLIC_IMAGE_DOMAIN}/${image}`}
+          width={100}
+          height={100}
+          alt="image"
+          className="rounded"
+        />
+      );
+    },
+  },
   {
     accessorKey: "title",
     header: ({ column }) => {
@@ -60,6 +81,31 @@ export const columns = (setType, openModal, setProductId) => [
     },
   },
   {
+    accessorKey: "is_published",
+    header: ({ column }) => {
+      return <Button variant="ghost">Status</Button>;
+    },
+    cell: ({ row }) => {
+      const is_published = row.original.is_published;
+      const id = row.original.id;
+      return (
+        <div className="flex items-center space-x-2">
+          <Switch
+            checked={is_published}
+            id="airplane-mode"
+            onCheckedChange={() => publishProduct(id, !is_published)}
+          />
+
+          <span
+            className={`${is_published ? "text-emerald-500" : "text-red-500"}`}
+          >
+            {is_published ? "Active" : "Hidden"}
+          </span>
+        </div>
+      );
+    },
+  },
+  {
     accessorKey: "created_at",
     header: ({ column }) => {
       return <Button variant="ghost">Created At</Button>;
@@ -95,14 +141,8 @@ export const columns = (setType, openModal, setProductId) => [
               View
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={() => {
-                setProductId(id);
-                setType("edit");
-                openModal();
-              }}
-            >
-              Edit
+            <DropdownMenuItem>
+              <Link href={`/products/edit/${id}`}>Edit</Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem

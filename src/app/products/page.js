@@ -11,12 +11,9 @@ import Modal from "@/components/Modal";
 import { ProductForm } from "@/components/Forms/product/Product";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import http from "@/utils/http";
-import { endpoints } from "@/utils/endpoints";
+import { endpoints } from "../../utils/endpoints.js";
 import { toast } from "sonner";
-
-async function updateProduct(data) {
-  return http().put(`${endpoints.products.getAll}/${data.id}`, data);
-}
+import { isObject } from "@/utils/object";
 
 async function deleteProduct(data) {
   return http().delete(`${endpoints.products.getAll}/${data.id}`);
@@ -29,12 +26,23 @@ export default function Products() {
   const queryClient = useQueryClient();
   const { data, isLoading, isError, error } = useFetchProducts();
   const filteredProducts = data?.map(
-    ({ id, title, type, price, discounted_price, created_at }) => ({
+    ({
       id,
       title,
       type,
       price,
       discounted_price,
+      pictures,
+      is_published,
+      created_at,
+    }) => ({
+      id,
+      title,
+      type,
+      price,
+      discounted_price,
+      pictures,
+      is_published,
       created_at,
     })
   );
@@ -46,20 +54,6 @@ export default function Products() {
   function closeModal() {
     setIsModal(false);
   }
-
-  const updateMutation = useMutation(updateProduct, {
-    onSuccess: () => {
-      toast.success("Category updated.");
-      queryClient.invalidateQueries({ queryKey: ["products"] });
-    },
-    onError: (error) => {
-      if (isObject(error)) {
-        toast.error(error.message);
-      } else {
-        toast.error(error);
-      }
-    },
-  });
 
   const deleteMutation = useMutation(deleteProduct, {
     onSuccess: () => {
@@ -75,12 +69,26 @@ export default function Products() {
     },
   });
 
-  const handleUpdate = async (data) => {
-    updateMutation.mutate({ ...data, id: productId });
-  };
   const handleDelete = async (data) => {
     deleteMutation.mutate(data);
   };
+
+  async function publishProduct(productId, value) {
+    try {
+      const response = await http().put(
+        `${endpoints.products.getAll}/publish/${productId}`,
+        { is_published: value }
+      );
+
+      toast.success(response.message);
+
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+
+      console.log({ response });
+    } catch (error) {
+      console.log(error);
+    }
+  }
 
   if (isLoading) {
     return <Spinner />;
@@ -101,7 +109,7 @@ export default function Products() {
 
       <div>
         <DataTable
-          columns={columns(setType, openModal, setProductId)}
+          columns={columns(setType, openModal, setProductId, publishProduct)}
           data={filteredProducts}
         />
       </div>
