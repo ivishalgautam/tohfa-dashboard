@@ -8,6 +8,7 @@ export const endpoints = {
   profile: "/users/me",
   products: {
     getAll: "/products",
+    admin: "/products/admin/getAll",
     attribute: {
       getAll: "/product-attributes",
       term: "/product-attribute-terms",
@@ -15,6 +16,9 @@ export const endpoints = {
   },
   categories: {
     getAll: "/categories",
+  },
+  banners: {
+    getAll: "/banners",
   },
   files: {
     upload: "/upload/files",

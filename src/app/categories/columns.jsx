@@ -6,6 +6,7 @@ import {
   ChevronDownIcon,
   DotsHorizontalIcon,
 } from "@radix-ui/react-icons";
+import Image from "next/image";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -17,6 +18,24 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export const columns = (setType, openModal, setCategoryId) => [
+  {
+    accessorKey: "pictures",
+    header: ({ column }) => {
+      return <Button variant="ghost">Image</Button>;
+    },
+    cell: ({ row }) => {
+      const image = row.original.image;
+      return (
+        <Image
+          src={`${process.env.NEXT_PUBLIC_IMAGE_DOMAIN}/${image}`}
+          width={100}
+          height={100}
+          alt="image"
+          className="rounded"
+        />
+      );
+    },
+  },
   {
     accessorKey: "name",
     header: ({ column }) => {

@@ -8,31 +8,32 @@ import { useState } from "react";
 import { CategoryForm } from "@/components/Forms/Category";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import http from "@/utils/http";
-import { endpoints } from "@/utils/endpoints";
+import { endpoints } from "../../utils/endpoints";
 import Spinner from "@/components/Spinner";
 import { isObject } from "@/utils/object";
 import { toast } from "sonner";
+import { BannerForm } from "../../components/Forms/Banner";
 
-async function postCategory(data) {
-  return http().post(endpoints.categories.getAll, data);
+async function postBanner(data) {
+  return http().post(endpoints.banners.getAll, data);
 }
 
-async function updateCategory(data) {
-  return http().put(`${endpoints.categories.getAll}/${data.id}`, data);
+async function updateBanner(data) {
+  return http().put(`${endpoints.banners.getAll}/${data.id}`, data);
 }
 
-async function deleteCategory(data) {
-  return http().delete(`${endpoints.categories.getAll}/${data.id}`);
+async function deleteBanner(data) {
+  return http().delete(`${endpoints.banners.getAll}/${data.id}`);
 }
 
-async function fetchCategories() {
-  return http().get(endpoints.categories.getAll);
+async function fetchBanners() {
+  return http().get(endpoints.banners.getAll);
 }
 
 export default function Categories() {
   const [isModal, setIsModal] = useState(false);
   const [type, setType] = useState("");
-  const [categoryId, setCategoryId] = useState(null);
+  const [bannerId, setBannerId] = useState(null);
   const queryClient = useQueryClient();
 
   function openModal() {
@@ -43,14 +44,14 @@ export default function Categories() {
   }
 
   const { data, isLoading, isError, error } = useQuery({
-    queryFn: fetchCategories,
-    queryKey: ["categories"],
+    queryFn: fetchBanners,
+    queryKey: ["banners"],
   });
 
-  const createMutation = useMutation(postCategory, {
+  const createMutation = useMutation(postBanner, {
     onSuccess: () => {
-      toast.success("New category added.");
-      queryClient.invalidateQueries("categories");
+      toast.success("New banner added.");
+      queryClient.invalidateQueries("banners");
     },
     onError: (error) => {
       if (isObject(error)) {
@@ -61,10 +62,10 @@ export default function Categories() {
     },
   });
 
-  const updateMutation = useMutation(updateCategory, {
+  const updateMutation = useMutation(updateBanner, {
     onSuccess: () => {
-      toast.success("Category updated.");
-      queryClient.invalidateQueries({ queryKey: ["categories"] });
+      toast.success("Banner updated.");
+      queryClient.invalidateQueries({ queryKey: ["banners"] });
     },
     onError: (error) => {
       if (isObject(error)) {
@@ -75,10 +76,10 @@ export default function Categories() {
     },
   });
 
-  const deleteMutation = useMutation(deleteCategory, {
+  const deleteMutation = useMutation(deleteBanner, {
     onSuccess: () => {
-      toast.success("Category deleted.");
-      queryClient.invalidateQueries({ queryKey: ["categories"] });
+      toast.success("Banner deleted.");
+      queryClient.invalidateQueries({ queryKey: ["banners"] });
     },
     onError: (error) => {
       if (isObject(error)) {
@@ -94,7 +95,7 @@ export default function Categories() {
   };
 
   const handleUpdate = async (data) => {
-    updateMutation.mutate({ ...data, id: categoryId });
+    updateMutation.mutate({ ...data, id: bannerId });
   };
 
   const handleDelete = async (id) => {
@@ -112,7 +113,7 @@ export default function Categories() {
   return (
     <div className="container mx-auto bg-white p-8 rounded-lg border-input">
       <div className="flex items-center justify-between">
-        <Title text={"Categories"} />
+        <Title text={"Banners"} />
 
         <Button
           onClick={() => {
@@ -120,25 +121,30 @@ export default function Categories() {
             openModal();
           }}
         >
-          Create Category
+          Create Banner
         </Button>
       </div>
       <div>
         <DataTable
-          columns={columns(setType, openModal, setCategoryId)}
-          data={data?.map(({ id, name, image }) => ({ id, name, image }))}
+          columns={columns(setType, openModal, setBannerId)}
+          data={data?.map(({ id, type, name, image }) => ({
+            id,
+            type,
+            name,
+            image,
+          }))}
         />
       </div>
 
       {isModal && (
         <Modal isOpen={isModal} onClose={closeModal}>
-          <CategoryForm
+          <BannerForm
             type={type}
             handleCreate={handleCreate}
             handleUpdate={handleUpdate}
             handleDelete={handleDelete}
             closeModal={closeModal}
-            categoryId={categoryId}
+            bannerId={bannerId}
           />
         </Modal>
       )}

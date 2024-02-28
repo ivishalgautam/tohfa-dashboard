@@ -47,16 +47,30 @@ export default function Variant({
     variantRemove();
     if (selectedValues && selectedValues.length > 0) {
       const flattenArr = selectedValues.flat();
-      flattenArr.forEach((so) =>
-        variantAppend({
-          name: so.label,
-          price: 0,
-          discounted_price: 0,
-          sku_id: "",
-          quantity: "",
-          weight: "",
-        })
-      );
+      // console.log({ selectedOption });
+      console.log({ selectedValues });
+
+      const pairs = [];
+
+      // Iterate over the first array's objects
+      selectedValues[0].forEach((obj1) => {
+        // Iterate over the rest of the arrays
+        for (let i = 1; i < selectedValues.length; i++) {
+          // Extract value and label properties and push them into pairs array
+          selectedValues[i].forEach((obj2) => {
+            variantAppend({
+              attribute_ids: [obj1.value, obj2.value],
+              slugs: [obj1.label, obj2.label],
+              name: `${obj1.label} | ${obj2.label}`,
+              price: 0,
+              discounted_price: 0,
+              sku_id: "",
+              quantity: "",
+              weight: "",
+            });
+          });
+        }
+      });
     }
     closeModal();
   };

@@ -31,7 +31,7 @@ export default function Products() {
       title,
       type,
       price,
-      discounted_price,
+      sale_price,
       pictures,
       is_published,
       created_at,
@@ -40,7 +40,7 @@ export default function Products() {
       title,
       type,
       price,
-      discounted_price,
+      sale_price,
       pictures,
       is_published,
       created_at,
@@ -59,6 +59,7 @@ export default function Products() {
     onSuccess: () => {
       toast.success("Category deleted.");
       queryClient.invalidateQueries({ queryKey: ["products"] });
+      closeModal();
     },
     onError: (error) => {
       if (isObject(error)) {
@@ -118,7 +119,6 @@ export default function Products() {
         <Modal onClose={closeModal} isOpen={isModal}>
           <ProductForm
             type={type}
-            handleUpdate={handleUpdate}
             handleDelete={handleDelete}
             closeModal={closeModal}
             productId={productId}

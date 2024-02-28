@@ -78,7 +78,7 @@ export default function Update({ params: { id } }) {
 
   const updateMutation = useMutation(updateProduct, {
     onSuccess: () => {
-      toast.success("Category updated.");
+      toast.success("Product updated.");
       queryClient.invalidateQueries({ queryKey: ["products"] });
     },
     onError: (error) => {
